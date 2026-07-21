@@ -39,6 +39,7 @@ export interface ReviewResult {
   grade: string;
   totalFindings: number;
   categories: Record<string, CategoryResult>;
+  aiFixes?: Record<string, string>;
 }
 
 export interface HealthStatus {
@@ -210,16 +211,16 @@ export class Bridge {
     });
   }
 
-  async reviewFile(filePath: string): Promise<ReviewResult> {
-    return (await this._call("review.file", { path: filePath })) as ReviewResult;
+  async reviewFile(filePath: string, enableAiFixes = false, llmProvider?: string): Promise<ReviewResult> {
+    return (await this._call("review.file", { path: filePath, enableAiFixes, llmProvider })) as ReviewResult;
   }
 
-  async reviewWorkspace(workspacePath: string): Promise<ReviewResult> {
-    return (await this._call("review.workspace", { path: workspacePath })) as ReviewResult;
+  async reviewWorkspace(workspacePath: string, enableAiFixes = false, llmProvider?: string): Promise<ReviewResult> {
+    return (await this._call("review.workspace", { path: workspacePath, enableAiFixes, llmProvider })) as ReviewResult;
   }
 
-  async reviewDiff(files: string[], workspace: string): Promise<ReviewResult> {
-    return (await this._call("review.diff", { files, workspace })) as ReviewResult;
+  async reviewDiff(files: string[], workspace: string, enableAiFixes = false, llmProvider?: string): Promise<ReviewResult> {
+    return (await this._call("review.diff", { files, workspace, enableAiFixes, llmProvider })) as ReviewResult;
   }
 
   async health(): Promise<HealthStatus> {

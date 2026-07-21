@@ -35,7 +35,7 @@ export function registerCommands(
           progress.report({ message: "Reviewing workspace..." });
 
           try {
-            const result = await bridge.reviewWorkspace(rootPath);
+            const result = await bridge.reviewWorkspace(rootPath, config.enableAiFixes, config.llmProvider);
 
             if (token.isCancellationRequested) return;
 
@@ -87,7 +87,7 @@ export function registerCommands(
           progress.report({ message: "Reviewing file..." });
 
           try {
-            const result = await bridge.reviewFile(filePath);
+            const result = await bridge.reviewFile(filePath, config.enableAiFixes, config.llmProvider);
 
             if (token.isCancellationRequested) return;
 

@@ -54,7 +54,7 @@ export function activate(context: vscode.ExtensionContext): void {
       if (!SUPPORTED_LANGUAGES.has(document.languageId)) return;
 
       try {
-        const result = await _bridge?.reviewFile(document.uri.fsPath);
+        const result = await _bridge?.reviewFile(document.uri.fsPath, _config?.enableAiFixes, _config?.llmProvider);
         if (result) {
           _diagnostics?.update(result);
           _treeProvider?.update(result);
