@@ -5,6 +5,7 @@ import { DiagnosticsProvider } from "./diagnostics";
 import { ReviewPanel } from "./panel";
 import { ResultsTreeDataProvider } from "./treeView";
 import { HistoryStore } from "./history";
+import { StatusBarIndicator } from "./statusBar";
 
 export function registerCommands(
   context: vscode.ExtensionContext,
@@ -14,6 +15,7 @@ export function registerCommands(
   panel: ReviewPanel,
   treeProvider: ResultsTreeDataProvider,
   history: HistoryStore,
+  statusBar: StatusBarIndicator,
 ): void {
   context.subscriptions.push(
     vscode.commands.registerCommand("seniorVibe.reviewWorkspace", async () => {
@@ -24,6 +26,8 @@ export function registerCommands(
       }
 
       const rootPath = workspaceFolders[0].uri.fsPath;
+
+      statusBar.setReviewing();
 
       await vscode.window.withProgress(
         {
@@ -41,6 +45,7 @@ export function registerCommands(
 
             diagnostics.update(result);
             treeProvider.update(result);
+            statusBar.setResult(result.overallScore, result.grade, result.totalFindings);
 
             history.addEntry({
               timestamp: Date.now(),
@@ -53,13 +58,9 @@ export function registerCommands(
             if (config.showPanelOnReview) {
               panel.show(result);
             }
-
-            vscode.window.setStatusBarMessage(
-              `Senior Vibe: Review complete — Score: ${result.overallScore}/100 (${result.grade})`,
-              5000,
-            );
           } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
+            statusBar.setError(msg);
             vscode.window.showErrorMessage(`Senior Vibe: Review failed — ${msg}`);
           }
         },
@@ -77,6 +78,8 @@ export function registerCommands(
 
       const filePath = editor.document.uri.fsPath;
 
+      statusBar.setReviewing();
+
       await vscode.window.withProgress(
         {
           location: vscode.ProgressLocation.Notification,
@@ -93,6 +96,7 @@ export function registerCommands(
 
             diagnostics.update(result);
             treeProvider.update(result);
+            statusBar.setResult(result.overallScore, result.grade, result.totalFindings);
 
             history.addEntry({
               timestamp: Date.now(),
@@ -107,6 +111,7 @@ export function registerCommands(
             }
           } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
+            statusBar.setError(msg);
             vscode.window.showErrorMessage(`Senior Vibe: Review failed — ${msg}`);
           }
         },
@@ -134,7 +139,7 @@ export function registerCommands(
     vscode.commands.registerCommand("seniorVibe.clearDiagnostics", () => {
       diagnostics.clear();
       treeProvider.clear();
-      vscode.window.setStatusBarMessage("Senior Vibe: Diagnostics cleared", 3000);
+      statusBar.setIdle();
     }),
   );
 

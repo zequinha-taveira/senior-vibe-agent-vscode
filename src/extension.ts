@@ -5,6 +5,7 @@ import { DiagnosticsProvider } from "./diagnostics";
 import { ReviewPanel } from "./panel";
 import { ResultsTreeDataProvider } from "./treeView";
 import { HistoryStore } from "./history";
+import { StatusBarIndicator } from "./statusBar";
 import { registerCommands } from "./commands";
 
 const SUPPORTED_LANGUAGES = new Set([
@@ -17,10 +18,14 @@ let _diagnostics: DiagnosticsProvider | null = null;
 let _panel: ReviewPanel | null = null;
 let _treeProvider: ResultsTreeDataProvider | null = null;
 let _history: HistoryStore | null = null;
+let _statusBar: StatusBarIndicator | null = null;
 
 export function activate(context: vscode.ExtensionContext): void {
   _config = new Config();
   context.subscriptions.push(_config);
+
+  _statusBar = new StatusBarIndicator();
+  context.subscriptions.push(_statusBar);
 
   _diagnostics = new DiagnosticsProvider(_config);
   context.subscriptions.push(_diagnostics);
@@ -40,13 +45,14 @@ export function activate(context: vscode.ExtensionContext): void {
   _bridge = new Bridge();
   _bridge.start().catch((err) => {
     console.error("Bridge failed to start:", err);
+    _statusBar?.setError(err.message);
     vscode.window.showErrorMessage(
       `Senior Vibe Agent: Failed to start review engine. Check that Python is installed.\nError: ${err.message}`,
     );
   });
   context.subscriptions.push(_bridge);
 
-  registerCommands(context, _bridge, _config, _diagnostics, _panel, _treeProvider, _history);
+  registerCommands(context, _bridge, _config, _diagnostics, _panel, _treeProvider, _history, _statusBar);
 
   context.subscriptions.push(
     vscode.workspace.onDidSaveTextDocument(async (document) => {
@@ -58,12 +64,10 @@ export function activate(context: vscode.ExtensionContext): void {
         if (result) {
           _diagnostics?.update(result);
           _treeProvider?.update(result);
-          vscode.window.setStatusBarMessage(
-            `Senior Vibe: Review complete (${result.overallScore}/100)`,
-            4000,
-          );
+          _statusBar?.setResult(result.overallScore, result.grade, result.totalFindings);
         }
       } catch (err) {
+        _statusBar?.setError("On-save review failed");
         console.error("On-save review failed:", err);
       }
     }),
@@ -80,9 +84,11 @@ export async function deactivate(): Promise<void> {
   _panel?.dispose();
   _diagnostics?.dispose();
   _config?.dispose();
+  _statusBar?.dispose();
   _panel = null;
   _diagnostics = null;
   _config = null;
+  _statusBar = null;
   _treeProvider = null;
   _history = null;
 
