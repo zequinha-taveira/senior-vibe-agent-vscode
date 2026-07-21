@@ -73,6 +73,37 @@ export function activate(context: vscode.ExtensionContext): void {
     }),
   );
 
+  context.subscriptions.push(
+    vscode.languages.registerCodeActionsProvider(
+      ["javascript", "typescript", "python", "java", "go", "rust", "cpp"],
+      {
+        provideCodeActions(document, range): vscode.CodeAction[] {
+          const diagnostics = vscode.languages.getDiagnostics(document.uri);
+          const atRange = diagnostics.filter(d =>
+            d.source === "Senior Vibe Agent" && d.range.intersection(range)
+          );
+
+          return atRange.flatMap(d => {
+            const actions: vscode.CodeAction[] = [];
+
+            const showAction = new vscode.CodeAction(
+              `Senior Vibe: Show fix suggestion`,
+              vscode.CodeActionKind.QuickFix,
+            );
+            showAction.command = {
+              command: "seniorVibe.showPanel",
+              title: "Show Fix Suggestion",
+            };
+            showAction.diagnostics = [d];
+            actions.push(showAction);
+
+            return actions;
+          });
+        },
+      },
+    ),
+  );
+
   console.log("Senior Vibe Agent extension activated");
 }
 
